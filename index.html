@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stratton Oakmont Terminal | Unbounded Knapsack Optimizer</title>
+    <style>
+      @font-face {
+        font-family: "Gotham";
+        src: local("Gotham"), local("Montserrat");
+      }
+      :root {
+        --black: #0a0a0a;
+        --ink: #111214;
+        --gold: #d4af37;
+        --gold-dim: #9a7e28;
+        --green: #00ff88;
+        --red: #ff3860;
+        --cream: #f5f0e1;
+        --muted: #8a8a8a;
+        --grid: rgba(212, 175, 55, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        font-family:
+          "Montserrat",
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--black);
+        color: var(--cream);
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      #matrix-rain {
+        position: fixed;
+        inset: 0;
+        opacity: 0.14;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .wrap {
+        position: relative;
+        z-index: 2;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 40px;
+        background: rgba(10, 10, 10, 0.72);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+      }
+      nav .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      nav .bull {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2px solid var(--gold);
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        animation: pulseGold 3s infinite;
+      }
+      @keyframes pulseGold {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 18px 6px rgba(212, 175, 55, 0.08);
+        }
+      }
+      nav a {
+        color: var(--cream);
+        text-decoration: none;
+        margin-left: 28px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: color 0.25s;
+      }
+      nav a:hover {
+        color: var(--gold);
+      }
+      header {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding-top: 80px;
+        position: relative;
+      }
+      header h1 {
+        font-size: clamp(42px, 7vw, 96px);
+        font-weight: 900;
+        line-height: 0.95;
+        margin: 0 0 18px;
+        background: linear-gradient(90deg, var(--gold), #fff 50%, var(--gold));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-transform: uppercase;
+      }
+      header h1 span {
+        color: var(--green);
+        -webkit-text-fill-color: var(--green);
+      }
+      header p {
+        max-width: 640px;
+        font-size: 18px;
+        line-height: 1.7;
+        color: var(--muted);
+        margin-bottom: 40px;
+      }
+      .cta-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 34px;
+        border-radius: 4px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        text-decoration: none;
+      }
+      .btn:hover {
+        transform: translateY(-3px);
+      }
+      .btn-primary {
+        background: var(--gold);
+        color: var(--black);
+        box-shadow: 0 0 24px rgba(212, 175, 55, 0.25);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+      }
+      .ticker {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        border-top: 1px solid rgba(212, 175, 55, 0.12);
+        border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+        padding: 14px 0;
+        background: rgba(17, 18, 20, 0.6);
+      }
+      .ticker span {
+        display: inline-block;
+        padding-left: 100%;
+        animation: ticker 24s linear infinite;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      @keyframes ticker {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+      section {
+        padding: 110px 0;
+      }
+      .section-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--gold);
+        margin-bottom: 10px;
+      }
+      .section-head {
+        font-size: clamp(28px, 4vw, 48px);
+        font-weight: 800;
+        margin: 0 0 50px;
+        line-height: 1.1;
+      }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+      }
+      .card {
+        background: var(--ink);
+        border: 1px solid rgba(212, 175, 55, 0.12);
+        border-radius: 10px;
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+        transition:
+          transform 0.3s,
+          border-color 0.3s;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold), var(--green));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s;
+      }
+      .card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(212, 175, 55, 0.35);
+      }
+      .card:hover::before {
+        transform: scaleX(1);
+      }
+      .card h3 {
+        margin: 0 0 12px;
+        font-size: 20px;
+        color: var(--gold);
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .terminal {
+        background: var(--ink);
+        border: 1px solid rgba(212, 175, 55, 0.15);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      }
+      .terminal-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        background: rgba(0, 0, 0, 0.35);
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .dot.r {
+        background: var(--red);
+      }
+      .dot.y {
+        background: #f1c40f;
+      }
+      .dot.g {
+        background: var(--green);
+      }
+      .terminal-body {
+        padding: 24px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input,
+      select {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 6px;
+        padding: 12px 14px;
+        color: var(--cream);
+        font-family: inherit;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      input:focus,
+      select:focus {
+        border-color: var(--gold);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-bottom: 18px;
+      }
+      th,
+      td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+      }
+      th {
+        color: var(--gold);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.8px;
+      }
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      #output {
+        margin-top: 22px;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 8px;
+        font-family: "SF Mono", "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        min-height: 80px;
+        white-space: pre-wrap;
+        color: var(--green);
+      }
+      #output .muted {
+        color: var(--muted);
+      }
+      #output .gold {
+        color: var(--gold);
+      }
+      #output .red {
+        color: var(--red);
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 50px;
+        align-items: center;
+      }
+      @media (max-width: 900px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+      .code-block {
+        background: var(--ink);
+        border: 1px solid rgba(212, 175, 55, 0.12);
+        border-radius: 10px;
+        padding: 24px;
+        font-family: "SF Mono", "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        overflow-x: auto;
+        color: #abb2bf;
+      }
+      footer {
+        padding: 60px 0;
+        text-align: center;
+        border-top: 1px solid rgba(212, 175, 55, 0.1);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .gold-text {
+        color: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="matrix-rain"></canvas>
+    <nav>
+      <div class="logo">
+        <div class="bull">🐂</div>
+        Stratton Terminal
+      </div>
+      <div>
+        <a href="#optimizer">Optimizer</a>
+        <a href="#engine">Engine</a>
+        <a href="#stack">Stack</a>
+        <a href="#docs">Docs</a>
+      </div>
+    </nav>
+    <header>
+      <div class="wrap">
+        <h1>
+          Unbounded
+          <span>Knapsack</span>
+        </h1>
+        <p>
+          The same algorithm that separates Lamborghini owners from bus riders.
+          Optimize weight, volume, and value with zero emotional trading. Pure
+          computational alpha.
+        </p>
+        <div class="cta-group">
+          <a href="#optimizer" class="btn btn-primary">Launch Terminal</a>
+          <a href="#docs" class="btn btn-outline">Read the Playbook</a>
+        </div>
+      </div>
+      <div class="ticker">
+        <span id="ticker-text">
+          PANACEA +4.20% · ICHOR +1.80% · GOLD +2.50% · MAX_WEIGHT 25 ·
+          MAX_VOLUME 0.25 · STRAIGHT LINE TO THE TOP · ALWAYS BE CLOSING ·
+        </span>
+      </div>
+    </header>
+    <section id="optimizer">
+      <div class="wrap">
+        <div class="section-title">The Terminal</div>
+        <h2 class="section-head">Run the optimization. See the alpha.</h2>
+        <div class="terminal">
+          <div class="terminal-head">
+            <div class="dot r"></div>
+            <div class="dot y"></div>
+            <div class="dot g"></div>
+            <span
+              style="margin-left: 10px; font-size: 12px; color: var(--muted)"
+            >
+              salesman@stratton:~$ unbounded-knapsack
+            </span>
+          </div>
+          <div class="terminal-body">
+            <div class="form-row">
+              <div>
+                <label>Max Weight</label>
+                <input id="maxWeight" type="number" step="0.01" value="25" />
+              </div>
+              <div>
+                <label>Max Volume</label>
+                <input id="maxVolume" type="number" step="0.001" value="0.25" />
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Value ($)</th>
+                  <th>Weight</th>
+                  <th>Volume</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="itemRows"></tbody>
+            </table>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="addRow()">
+                + Add Asset
+              </button>
+              <button class="btn btn-outline" onclick="resetItems()">
+                Reset Defaults
+              </button>
+              <button
+                class="btn btn-primary"
+                onclick="optimize()"
+                style="margin-left: auto"
+              >
+                Execute Trade
+              </button>
+            </div>
+            <div id="output">
+              <span class="muted">Awaiting execution...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="engine" style="background: rgba(17, 18, 20, 0.4)">
+      <div class="wrap">
+        <div class="section-title">The Engine</div>
+        <h2 class="section-head">How the algorithm prints money</h2>
+        <div class="split">
+          <div>
+            <p style="color: var(--muted); line-height: 1.7; font-size: 15px">
+              We convert floating-point constraints into integer capacity via
+              decimal scaling, then run a 2D unbounded dynamic program. Time
+              complexity is O(n · W · V) where W and V are scaled capacities.
+              Space is O(W · V). No fractional items. No gut feelings. Only
+              math.
+            </p>
+            <div class="card-grid" style="margin-top: 28px">
+              <div class="card">
+                <h3>Scale</h3>
+                <p>
+                  Normalize weight and volume to integers by extracting the
+                  largest decimal precision across all inputs.
+                </p>
+              </div>
+              <div class="card">
+                <h3>DP Grid</h3>
+                <p>
+                  Build a value table indexed by remaining weight and volume
+                  capacity.
+                </p>
+              </div>
+              <div class="card">
+                <h3>Reconstruct</h3>
+                <p>
+                  Backtrack through optimal states to return the exact item
+                  counts.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="code-block">
+            function knapsackUnbounded(items, maxW, maxV) { const scale =
+            Math.max( ...items.flatMap(i => [i.weight, i.volume].map(d =>
+            d.toString().split('.')[1]?.length || 0 ) ),
+            maxW.toString().split('.')[1]?.length || 0,
+            maxV.toString().split('.')[1]?.length || 0 ); const f = 10 ** scale;
+            const W = Math.round(maxW * f); const V = Math.round(maxV * f);
+            const dp = Array.from({length: W+1}, () => new
+            Float64Array(V+1).fill(0)); for (const it of items) { const w =
+            Math.round(it.weight * f); const v = Math.round(it.volume * f); for
+            (let i = w; i <= W; i++) for (let j = v; j <= V; j++) dp[i][j] =
+            Math.max(dp[i][j], dp[i-w][j-v] + it.value); } return dp[W][V]; }
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="stack">
+      <div class="wrap">
+        <div class="section-title">Technology Stack</div>
+        <h2 class="section-head">Luxury-grade tooling</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>Frontend</h3>
+            <p>
+              Semantic HTML5, CSS Grid, custom properties, CSS animations,
+              Canvas particle effects, and vanilla ES2023 JavaScript.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Backend Python</h3>
+            <p>
+              FastAPI microservice exposing `/optimize` with Pydantic validation
+              and Numba-compatible loops.
+            </p>
+          </div>
+          <div class="card">
+            <h3>TypeScript</h3>
+            <p>
+              Typed React-style component with strict interfaces, generics, and
+              unit tests via Vitest.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Java</h3>
+            <p>
+              Spring Boot controller using imperative 2D DP with primitive
+              arrays for maximum throughput.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="docs" style="background: rgba(17, 18, 20, 0.4)">
+      <div class="wrap">
+        <div class="section-title">Documentation</div>
+        <h2 class="section-head">The README Playbook</h2>
+        <div class="code-block" style="font-size: 13px; white-space: pre-wrap">
+          # Stratton Oakmont Terminal > "The only thing standing between you and
+          your goal is the story you keep telling yourself." — Jordan Belfort A
+          multi-language implementation of the unbounded knapsack problem with
+          weight AND volume constraints. ## Quick Start ```bash cd
+          wolf-of-wallstreet-dev python3 -m http.server 8000 # serve the SPA ```
+          Open `http://localhost:8000` and hit "Execute Trade". ## API ```bash
+          curl -X POST http://localhost:8001/optimize \ -H "Content-Type:
+          application/json" \ -d '{ "items": [
+          {"name":"panacea","value":3000,"weight":0.3,"volume":0.025},
+          {"name":"ichor","value":1800,"weight":0.2,"volume":0.015},
+          {"name":"gold","value":2500,"weight":2,"volume":0.002} ],
+          "max_weight": 25, "max_volume": 0.25 }' ``` ## References Cormen, T.
+          H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2022). Introduction
+          to algorithms (4th ed.). MIT Press. Kellerer, H., Pferschy, U., &
+          Pisinger, D. (2004). Knapsack problems. Springer.
+        </div>
+      </div>
+    </section>
+    <footer>
+      <div class="wrap">
+        Built with pure frontend craft and computational greed.
+        <span class="gold-text">🐂</span>
+        Stratton Oakmont Terminal, 2026.
+      </div>
+    </footer>
+    <script>
+      const DEFAULT_ITEMS = [
+        { name: "panacea", value: 3000, weight: 0.3, volume: 0.025 },
+        { name: "ichor", value: 1800, weight: 0.2, volume: 0.015 },
+        { name: "gold", value: 2500, weight: 2, volume: 0.002 }
+      ];
+      let items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+
+      function renderRows() {
+        const tbody = document.getElementById("itemRows");
+        tbody.innerHTML = items
+          .map(
+            (it, i) => `
+    <tr>
+      <td><input value="${it.name}" onchange="items[${i}].name=this.value"></td>
+      <td><input type="number" value="${it.value}" onchange="items[${i}].value=+this.value"></td>
+      <td><input type="number" step="0.001" value="${it.weight}" onchange="items[${i}].weight=+this.value"></td>
+      <td><input type="number" step="0.0001" value="${it.volume}" onchange="items[${i}].volume=+this.value"></td>
+      <td><button class="btn btn-outline" style="padding:8px 14px" onclick="removeRow(${i})">×</button></td>
+    </tr>
+  `
+          )
+          .join("");
+      }
+
+      function addRow() {
+        items.push({
+          name: "asset-" + (items.length + 1),
+          value: 1000,
+          weight: 1,
+          volume: 0.01
+        });
+        renderRows();
+      }
+
+      function removeRow(i) {
+        items.splice(i, 1);
+        renderRows();
+      }
+
+      function resetItems() {
+        items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+        document.getElementById("maxWeight").value = 25;
+        document.getElementById("maxVolume").value = 0.25;
+        renderRows();
+      }
+
+      function getDecimalScale(values) {
+        let max = 0;
+        for (const v of values) {
+          const s = v.toString();
+          if (s.includes("e")) {
+            max = Math.max(max, 1000);
+            continue;
+          }
+          const idx = s.indexOf(".");
+          if (idx !== -1) max = Math.max(max, s.length - idx - 1);
+        }
+        return 10 ** max;
+      }
+
+      function optimize() {
+        const maxWeight = parseFloat(
+          document.getElementById("maxWeight").value
+        );
+        const maxVolume = parseFloat(
+          document.getElementById("maxVolume").value
+        );
+        const out = document.getElementById("output");
+        out.innerHTML = '<span class="muted">Optimizing portfolio...</span>';
+
+        const scale = getDecimalScale([
+          ...items.flatMap((i) => [i.weight, i.volume]),
+          maxWeight,
+          maxVolume
+        ]);
+
+        const W = Math.round(maxWeight * scale);
+        const V = Math.round(maxVolume * scale);
+        const n = items.length;
+        const weights = items.map((i) => Math.round(i.weight * scale));
+        const volumes = items.map((i) => Math.round(i.volume * scale));
+        const values = items.map((i) => i.value);
+
+        const dp = new Float64Array((W + 1) * (V + 1)).fill(0);
+
+        for (let idx = 0; idx < n; idx++) {
+          const wi = weights[idx],
+            vi = volumes[idx],
+            val = values[idx];
+          for (let w = wi; w <= W; w++) {
+            const row = w * (V + 1);
+            const prev = (w - wi) * (V + 1);
+            for (let v = vi; v <= V; v++) {
+              const cand = dp[prev + v - vi] + val;
+              const i = row + v;
+              if (cand > dp[i]) dp[i] = cand;
+            }
+          }
+        }
+
+        let w = W,
+          v = V;
+        const counts = new Array(n).fill(0);
+        while (w > 0 && v > 0) {
+          let moved = false;
+          for (let idx = 0; idx < n; idx++) {
+            const wi = weights[idx],
+              vi = volumes[idx];
+            if (
+              w >= wi &&
+              v >= vi &&
+              Math.abs(
+                dp[w * (V + 1) + v] -
+                  (dp[(w - wi) * (V + 1) + v - vi] + values[idx])
+              ) < 0.5
+            ) {
+              counts[idx]++;
+              w -= wi;
+              v -= vi;
+              moved = true;
+              break;
+            }
+          }
+          if (!moved) break;
+        }
+
+        const totalValue = dp[W * (V + 1) + V];
+        const totalWeight = counts.reduce(
+          (a, c, i) => a + c * items[i].weight,
+          0
+        );
+        const totalVolume = counts.reduce(
+          (a, c, i) => a + c * items[i].volume,
+          0
+        );
+
+        out.innerHTML =
+          '<span class="gold">MAX VALUE: $' +
+          totalValue.toLocaleString() +
+          "</span>\n" +
+          "Total Weight: " +
+          totalWeight.toFixed(4) +
+          " / " +
+          maxWeight +
+          "\n" +
+          "Total Volume: " +
+          totalVolume.toFixed(6) +
+          " / " +
+          maxVolume +
+          "\n\n" +
+          counts
+            .map((c, i) =>
+              c > 0 ? items[i].name + ": " + c + " unit(s)" : null
+            )
+            .filter(Boolean)
+            .join("\n");
+      }
+
+      function initMatrix() {
+        const c = document.getElementById("matrix-rain");
+        const ctx = c.getContext("2d");
+        const resize = () => {
+          c.width = innerWidth;
+          c.height = innerHeight;
+        };
+        resize();
+        addEventListener("resize", resize);
+        const cols = Math.floor(innerWidth / 18);
+        const drops = Array(cols).fill(1);
+        const chars = "0123456789$¥€£";
+        function draw() {
+          ctx.fillStyle = "rgba(10,10,10,0.07)";
+          ctx.fillRect(0, 0, c.width, c.height);
+          ctx.fillStyle = "#d4af37";
+          ctx.font = "14px monospace";
+          for (let i = 0; i < drops.length; i++) {
+            ctx.fillText(
+              chars[Math.floor(Math.random() * chars.length)],
+              i * 18,
+              drops[i] * 18
+            );
+            if (drops[i] * 18 > c.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+          }
+          requestAnimationFrame(draw);
+        }
+        draw();
+      }
+
+      renderRows();
+      initMatrix();
+    </script>
+  </body>
+</html>
